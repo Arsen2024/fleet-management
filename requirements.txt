@@ -3,3 +3,10 @@ uvicorn
 sqlalchemy
 asyncpg
 python-dotenv
+pwdlib[argon2]
+pyjwt
+python-multipart
+pytest
+httpx
+pydantic
+email-validator
