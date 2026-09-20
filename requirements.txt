@@ -10,3 +10,4 @@ pytest
 httpx
 pydantic
 email-validator
+jinja2

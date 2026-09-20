@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import AsyncSessionLocal
 from app.models.user import User
-from app.schemas.user import Token, UserRegister, UserResponse
+from app.schemas.user import Token, UserLogin, UserRegister, UserResponse
 from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(
@@ -53,7 +53,7 @@ async def register_user(
 
 @router.post("/login", response_model=Token)
 async def login_user(
-    user_data: UserRegister,
+    user_data: UserLogin,
     db: AsyncSession = Depends(get_db),
 ):
     user = await db.scalar(select(User).where(User.username == user_data.username))
