@@ -1,16 +1,9 @@
-import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from dotenv import load_dotenv
 from pwdlib import PasswordHash
 
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-if SECRET_KEY is None:
-    raise ValueError("SECRET_KEY is not set")
+from app.config import settings
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -35,6 +28,6 @@ def create_access_token(data: dict) -> str:
 
     return jwt.encode(
         to_encode,
-        SECRET_KEY,
+        settings.secret_key,
         algorithm=ALGORITHM,
     )

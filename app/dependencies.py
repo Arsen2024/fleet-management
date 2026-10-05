@@ -5,9 +5,10 @@ from jwt import InvalidTokenError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import AsyncSessionLocal
 from app.models.user import User
-from app.security import ALGORITHM, SECRET_KEY
+from app.security import ALGORITHM
 
 security = HTTPBearer()
 
@@ -26,7 +27,7 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            SECRET_KEY,
+            settings.secret_key,
             algorithms=[ALGORITHM],
         )
     except InvalidTokenError as exc:

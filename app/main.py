@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
+from app.config import settings
 from app.database import init_db, test_connection
 from app.routers import auth, home, users, vehicles
 
@@ -13,12 +15,28 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    debug=settings.debug,
+)
 
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(home.router)
 app.include_router(vehicles.router)
+
+
+@app.exception_handler(500)
+async def internal_server_error_handler(
+    _request: Request,
+    _exc: Exception,
+):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error",
+        },
+    )
 
 
 @app.get("/")
