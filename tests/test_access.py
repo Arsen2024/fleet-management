@@ -18,11 +18,13 @@ def test_anonymous_access_to_profile(client):
     assert response.status_code == 401
 
 
-def test_user_cannot_access_admin_panel(client):
+def test_user_cannot_access_admin_panel(client, test_users):
+    user = test_users["user1"]
+
     token = get_token(
         client,
-        "testuser",
-        "123",
+        user["username"],
+        user["password"],
     )
 
     response = client.get(
@@ -35,15 +37,17 @@ def test_user_cannot_access_admin_panel(client):
     assert response.status_code == 403
 
 
-def test_user_cannot_modify_another_users_vehicle(client):
+def test_user_cannot_modify_another_users_vehicle(client, test_users, test_vehicle):
+    user2 = test_users["user2"]
+
     token = get_token(
         client,
-        "user2",
-        "1234",
+        user2["username"],
+        user2["password"],
     )
 
     response = client.patch(
-        "/vehicles/1/status",
+        f"/vehicles/{test_vehicle['id']}/status",
         headers={
             "Authorization": f"Bearer {token}",
         },

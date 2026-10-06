@@ -1,9 +1,11 @@
-def test_login_success(client):
+def test_login_success(client, test_users):
+    user = test_users["user1"]
+
     response = client.post(
         "/auth/login",
         json={
-            "username": "testuser",
-            "password": "123",
+            "username": user["username"],
+            "password": user["password"],
         },
     )
 
@@ -15,11 +17,13 @@ def test_login_success(client):
     assert data["token_type"] == "bearer"
 
 
-def test_login_wrong_password(client):
+def test_login_wrong_password(client, test_users):
+    user = test_users["user1"]
+
     response = client.post(
         "/auth/login",
         json={
-            "username": "testuser",
+            "username": user["username"],
             "password": "wrong-password",
         },
     )
