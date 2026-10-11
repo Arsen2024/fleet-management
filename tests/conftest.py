@@ -2,8 +2,12 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import delete, select
 
+from app.database import AsyncSessionLocal
 from app.main import app
+from app.models.user import User
+from app.models.vehicle import Vehicle
 
 
 @pytest.fixture(scope="session")
@@ -28,22 +32,25 @@ def test_users(client):
         "password": "1234",
     }
 
-    response = client.post(
-        "/auth/register",
-        json=user1,
-    )
-    assert response.status_code == 201
+    for user in (user1, user2):
+        response = client.post("/auth/register", json=user)
+        assert response.status_code == 201
 
-    response = client.post(
-        "/auth/register",
-        json=user2,
-    )
-    assert response.status_code == 201
+    yield {"user1": user1, "user2": user2}
 
-    return {
-        "user1": user1,
-        "user2": user2,
-    }
+    usernames = [user1["username"], user2["username"]]
+
+    async def cleanup_test_data():
+        async with AsyncSessionLocal() as session:
+            user_ids = select(User.id).where(User.username.in_(usernames))
+
+            await session.execute(delete(Vehicle).where(Vehicle.user_id.in_(user_ids)))
+
+            await session.execute(delete(User).where(User.username.in_(usernames)))
+
+            await session.commit()
+
+    client.portal.call(cleanup_test_data)
 
 
 @pytest.fixture

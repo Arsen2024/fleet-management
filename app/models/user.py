@@ -42,6 +42,11 @@ class User(Base):
         default="user",
     )
 
+    token_version: Mapped[int] = mapped_column(
+        default=0,
+        nullable=False,
+    )
+
     vehicles: Mapped[list["Vehicle"]] = relationship(
         back_populates="owner",
         cascade="all, delete-orphan",

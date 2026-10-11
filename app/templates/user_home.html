@@ -2,16 +2,467 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Кабінет користувача</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Мій кабінет — Fleet Management</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f3f6fb;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #172554;
+            color: white;
+            padding: 20px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .logo span {
+            color: #60a5fa;
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .logout-button {
+            background: transparent;
+            color: white;
+            border: 1px solid #64748b;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-button:hover {
+            background: #1e40af;
+        }
+
+        .container {
+            max-width: 1150px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .welcome {
+            margin-bottom: 28px;
+        }
+
+        .welcome h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+            color: #0f172a;
+        }
+
+        .welcome p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .role {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .notice {
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 26px;
+            margin-bottom: 26px;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        .card h2 {
+            font-size: 21px;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+
+        .card-description {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 22px;
+            line-height: 1.5;
+        }
+
+        .vehicle-form {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .primary-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            align-self: end;
+        }
+
+        .primary-button:hover {
+            background: #1d4ed8;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        th {
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f8fafc;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .plate {
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-inactive {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .status-form {
+            margin: 0;
+        }
+
+        .status-button {
+            padding: 8px 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            background: white;
+            color: #334155;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .status-button:hover {
+            background: #f1f5f9;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 35px 15px;
+            color: #64748b;
+            line-height: 1.7;
+        }
+
+        .footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            padding: 25px 15px;
+        }
+
+        @media (max-width: 760px) {
+            .navbar {
+                padding: 18px 5%;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .container {
+                margin-top: 28px;
+            }
+
+            .welcome h1 {
+                font-size: 25px;
+            }
+
+            .vehicle-form {
+                grid-template-columns: 1fr;
+            }
+
+            .primary-button {
+                width: 100%;
+            }
+
+            .card {
+                padding: 20px 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-<h1>Домашня сторінка користувача</h1>
+<header class="navbar">
+        <div class="logo">
+            Fleet <span>Management</span>
+        </div>
 
-    <p>Вітаємо, {{ username }}!</p>
-    <p>Ваша роль: {{ role }}</p>
+        <form class="logout-form" action="/logout" method="post">
+            <button class="logout-button" type="submit">
+                Вийти з акаунта
+            </button>
+        </form>
+    </header>
 
-    <hr>
+    <main class="container">
+        <section class="welcome">
+            <h1>Вітаємо, {{ username }}!</h1>
+            <p>
+                Тут ти можеш переглядати свій автопарк,
+                додавати автомобілі та керувати їхнім статусом.
+            </p>
 
-    <p>Це демонстраційна сторінка звичайного користувача.</p>
+            <span class="role">Роль: {{ role }}</span>
+        </section>
+
+        {% if message %}
+            <div class="notice success">
+                {{ message }}
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="notice error">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <section class="card">
+            <h2>Додати автомобіль</h2>
+            <p class="card-description">
+                Заповни інформацію про автомобіль, щоб додати його до свого автопарку.
+            </p>
+
+            <form class="vehicle-form" action="/vehicles/add" method="post">
+                <div class="form-group">
+                    <label for="brand">Марка автомобіля</label>
+                    <input
+                        id="brand"
+                        name="brand"
+                        type="text"
+                        placeholder="Наприклад, Toyota"
+                        maxlength="100"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="model">Модель</label>
+                    <input
+                        id="model"
+                        name="model"
+                        type="text"
+                        placeholder="Наприклад, Camry"
+                        maxlength="100"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="license_plate">Номерний знак</label>
+                    <input
+                        id="license_plate"
+                        name="license_plate"
+                        type="text"
+                        placeholder="Наприклад, AA1234BB"
+                        maxlength="20"
+                        required
+                    >
+                </div>
+
+                <button class="primary-button" type="submit">
+                    + Додати автомобіль
+                </button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Мій автопарк</h2>
+            <p class="card-description">
+                Список автомобілів, зареєстрованих у твоєму обліковому записі.
+            </p>
+
+            {% if vehicles %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Марка</th>
+                                <th>Модель</th>
+                                <th>Номерний знак</th>
+                                <th>Статус</th>
+                                <th>Дія</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for vehicle in vehicles %}
+                                <tr>
+                                    <td>{{ vehicle.id }}</td>
+                                    <td>{{ vehicle.brand }}</td>
+                                    <td>{{ vehicle.model }}</td>
+                                    <td class="plate">
+                                        {{ vehicle.license_plate }}
+                                    </td>
+                                    <td>
+                                        {% if vehicle.status == "active" %}
+                                            <span class="status status-active">
+                                                Активний
+                                            </span>
+                                        {% else %}
+                                            <span class="status status-inactive">
+                                                Неактивний
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form
+                                            class="status-form"
+                                            action="/vehicles/{{ vehicle.id }}/status"
+                                            method="post"
+                                        >
+                                            {% if vehicle.status == "active" %}
+                                                <input
+                                                    type="hidden"
+                                                    name="status"
+                                                    value="inactive"
+                                                >
+                                                <button
+                                                    class="status-button"
+                                                    type="submit"
+                                                >
+                                                    Деактивувати
+                                                </button>
+                                            {% else %}
+                                                <input
+                                                    type="hidden"
+                                                    name="status"
+                                                    value="active"
+                                                >
+                                                <button
+                                                    class="status-button"
+                                                    type="submit"
+                                                >
+                                                    Активувати
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>Твій автопарк поки що порожній.</p>
+                    <p>Додай перший автомобіль за допомогою форми вище.</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="footer">
+        Fleet Management System · Керування автопарком
+    </footer>
 </body>
 </html>

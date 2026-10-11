@@ -71,6 +71,7 @@ async def login_user(
         {
             "sub": str(user.id),
             "role": user.role,
+            "token_version": user.token_version,
         }
     )
 
