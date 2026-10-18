@@ -298,6 +298,35 @@ async def update_vehicle_status_from_form(
     )
 
 
+@router.post("/vehicles/{vehicle_id}/delete")
+async def delete_vehicle_from_form(
+    vehicle_id: int,
+    current_user: User = Depends(get_current_user),
+):
+    async with AsyncSessionLocal() as db:
+        vehicle = await db.scalar(select(Vehicle).where(Vehicle.id == vehicle_id))
+
+        if vehicle is None:
+            return RedirectResponse(
+                "/home/user?error=Автомобіль не знайдено",
+                status_code=303,
+            )
+
+        if vehicle.user_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have access to this vehicle",
+            )
+
+        await db.delete(vehicle)
+        await db.commit()
+
+    return RedirectResponse(
+        "/home/user?message=Автомобіль успішно видалено",
+        status_code=303,
+    )
+
+
 @router.post("/admin/users/{user_id}/role")
 async def update_user_role(
     user_id: int,

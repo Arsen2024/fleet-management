@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: fleet_db
       POSTGRES_USER: fleet_user
-      POSTGRES_PASSWORD: fleet_password
+      POSTGRES_PASSWORD: ${FLEET_DB_PASSWORD:?Set FLEET_DB_PASSWORD in .env.sandbox}
 
     ports:
       - "5432:5432"
@@ -15,5 +15,22 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  telemetry_postgres:
+    image: postgres:17
+    container_name: telemetry_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: telemetry_db
+      POSTGRES_USER: telemetry_user
+      POSTGRES_PASSWORD: ${TELEMETRY_DB_PASSWORD:?Set TELEMETRY_DB_PASSWORD in .env.sandbox}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - telemetry_postgres_data:/var/lib/postgresql/data
+
 volumes:
   postgres_data:
+  telemetry_postgres_data:

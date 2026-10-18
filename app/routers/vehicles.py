@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import secrets
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.models.vehicle import Vehicle
@@ -78,3 +81,59 @@ async def update_vehicle_status(
     await db.refresh(vehicle)
 
     return vehicle
+
+
+@router.delete(
+    "/{vehicle_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_vehicle(
+    vehicle_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    vehicle = await db.scalar(select(Vehicle).where(Vehicle.id == vehicle_id))
+
+    if vehicle is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vehicle not found",
+        )
+
+    if vehicle.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this vehicle",
+        )
+
+    await db.delete(vehicle)
+    await db.commit()
+
+
+@router.get("/internal/{vehicle_id}")
+async def get_vehicle_internal(
+    vehicle_id: int,
+    x_service_api_key: str = Header(),
+    db: AsyncSession = Depends(get_db),
+):
+    if not secrets.compare_digest(
+        x_service_api_key,
+        settings.service_api_key,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid service API key",
+        )
+
+    vehicle = await db.scalar(select(Vehicle).where(Vehicle.id == vehicle_id))
+
+    if vehicle is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Vehicle not found",
+        )
+
+    return {
+        "id": vehicle.id,
+        "status": vehicle.status,
+    }

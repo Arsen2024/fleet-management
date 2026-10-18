@@ -18,6 +18,8 @@ if env_file is None:
 class Settings(BaseSettings):
     database_url: str
     secret_key: str
+    service_api_key: str
+    telemetry_service_url: str = "http://127.0.0.1:8001"
     debug: bool = False
 
     model_config = SettingsConfigDict(
