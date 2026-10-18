@@ -52,6 +52,7 @@ jobs:
           ENVIRONMENT: sandbox
           DATABASE_URL: postgresql+asyncpg://fleet_user:fleet_password@localhost:5432/fleet_db_sandbox
           SECRET_KEY: ci-test-secret-key
+          SERVICE_API_KEY: ci-test-service-api-key
           DEBUG: "true"
         run: |
           python -m pytest -v
