@@ -25,6 +25,7 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+cpu_ram_log.csv
 
 # Ruff
 .ruff_cache/
