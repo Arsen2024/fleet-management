@@ -72,6 +72,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Build main service
+        run: python -m compileall -q app
+
       - name: Run main service tests
         env:
           ENVIRONMENT: sandbox
@@ -100,6 +103,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Build telemetry service
+        run: python -m compileall -q telemetry_service/app
 
       - name: Run telemetry unit tests
         run: python -m pytest -v telemetry_service/app/tests
