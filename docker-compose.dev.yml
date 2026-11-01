@@ -1,0 +1,24 @@
+services:
+  fleet:
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+    volumes:
+      - ./app:/app/app
+
+  telemetry:
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8001"
+      - --reload
+    volumes:
+      - ./telemetry_service/app:/app/app
