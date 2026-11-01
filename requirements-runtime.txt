@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy[asyncio]
+asyncpg
+python-dotenv
+pwdlib[argon2]
+pyjwt
+python-multipart
+pydantic
+email-validator
+jinja2
+pydantic-settings
+httpx
