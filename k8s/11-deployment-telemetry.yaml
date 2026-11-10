@@ -1,0 +1,79 @@
+
+# DVO-L3-7F2A91
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry
+  namespace: fleet-management
+  labels:
+    app: telemetry
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot: "кабачок"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: telemetry
+  template:
+    metadata:
+      labels:
+        app: telemetry
+        mascot: kabachok
+      annotations:
+        devops-lab/mascot-approved: "true"
+        devops-lab/mascot: "кабачок"
+    spec:
+      containers:
+        - name: telemetry
+          image: ghcr.io/arsen2024/fleet-telemetry:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8001
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: TELEMETRY_DATABASE_URL
+            - name: FLEET_MANAGEMENT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: fleet-config
+                  key: FLEET_MANAGEMENT_URL
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: SERVICE_API_KEY
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: fleet-config
+                  key: DEBUG
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 10

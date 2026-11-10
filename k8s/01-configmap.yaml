@@ -1,0 +1,18 @@
+
+# DVO-L3-7F2A91
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleet-config
+  namespace: fleet-management
+  labels:
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot: "кабачок"
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  TELEMETRY_SERVICE_URL: "http://telemetry-service:8001"
+  REDIS_URL: "redis://redis:6379/0"
+  FLEET_MANAGEMENT_URL: "http://fleet-management:8000"

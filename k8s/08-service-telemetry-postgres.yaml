@@ -1,0 +1,21 @@
+
+# DVO-L3-7F2A91
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetry-postgres
+  namespace: fleet-management
+  labels:
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot: "кабачок"
+spec:
+  type: ClusterIP
+  selector:
+    app: telemetry-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP

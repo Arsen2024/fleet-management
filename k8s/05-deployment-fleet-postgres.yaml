@@ -1,0 +1,74 @@
+
+# DVO-L3-7F2A91
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-postgres
+  namespace: fleet-management
+  labels:
+    app: fleet-postgres
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot: "кабачок"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fleet-postgres
+  template:
+    metadata:
+      labels:
+        app: fleet-postgres
+        mascot: kabachok
+      annotations:
+        devops-lab/mascot-approved: "true"
+        devops-lab/mascot: "кабачок"
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: fleet_db_sandbox
+            - name: POSTGRES_USER
+              value: fleet_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: FLEET_DB_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U fleet_user -d fleet_db_sandbox
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U fleet_user -d fleet_db_sandbox
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: fleet-postgres-pvc

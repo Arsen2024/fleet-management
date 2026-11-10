@@ -1,0 +1,94 @@
+
+# DVO-L3-7F2A91
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-management
+  namespace: fleet-management
+  labels:
+    app: fleet-management
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot: "кабачок"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: fleet-management
+  template:
+    metadata:
+      labels:
+        app: fleet-management
+        mascot: kabachok
+      annotations:
+        devops-lab/mascot-approved: "true"
+        devops-lab/mascot: "кабачок"
+    spec:
+      containers:
+        - name: fleet-management
+          image: ghcr.io/arsen2024/fleet-management:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: fleet-config
+                  key: ENVIRONMENT
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: fleet-config
+                  key: DEBUG
+            - name: TELEMETRY_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: fleet-config
+                  key: TELEMETRY_SERVICE_URL
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: fleet-config
+                  key: REDIS_URL
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: FLEET_DATABASE_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: SECRET_KEY
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: SERVICE_API_KEY
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 768Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 40
+            periodSeconds: 10

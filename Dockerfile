@@ -1,3 +1,6 @@
+
+# DVO-L3-7F2A91
+
 FROM python:3.13-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -13,6 +16,10 @@ RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-compile -r requirements-runtime.txt
 
 FROM python:3.13-slim AS runtime
+
+ARG APP_VERSION=1.1.0
+
+LABEL org.opencontainers.image.version="${APP_VERSION}"
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

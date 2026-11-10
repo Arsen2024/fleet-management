@@ -1,0 +1,74 @@
+
+# DVO-L3-7F2A91
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemetry-postgres
+  namespace: fleet-management
+  labels:
+    app: telemetry-postgres
+    mascot: kabachok
+  annotations:
+    devops-lab/mascot-approved: "true"
+    devops-lab/mascot: "кабачок"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemetry-postgres
+  template:
+    metadata:
+      labels:
+        app: telemetry-postgres
+        mascot: kabachok
+      annotations:
+        devops-lab/mascot-approved: "true"
+        devops-lab/mascot: "кабачок"
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: telemetry_db
+            - name: POSTGRES_USER
+              value: telemetry_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fleet-secrets
+                  key: TELEMETRY_DB_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U telemetry_user -d telemetry_db
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U telemetry_user -d telemetry_db
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: telemetry-postgres-pvc

@@ -1,3 +1,5 @@
+<!-- DVO-L3-7F2A91 -->
+
 # Fleet Management System
 
 Система керування автопарком, розроблена на Python з використанням FastAPI та PostgreSQL.
@@ -370,3 +372,303 @@ CI pipeline виконує:
 Для різних середовищ використовуються окремі конфігурації та окремі бази даних.
 
 **Реальні паролі, секретні ключі та інші конфіденційні значення не повинні публікуватися в Git-репозиторії.**
+
+## Kubernetes (Minikube)
+
+Проєкт підтримує розгортання в Kubernetes за допомогою Minikube. Kubernetes-конфігурація розташована в директорії `k8s/`.
+
+### Архітектура Kubernetes
+
+У Kubernetes розгортаються такі компоненти:
+
+| Компонент | Призначення |
+|---|---|
+| Fleet Management | Основний FastAPI-застосунок |
+| Telemetry | Сервіс обробки телеметрії |
+| Fleet PostgreSQL | База даних основного застосунку |
+| Telemetry PostgreSQL | База даних телеметрії |
+| Redis | Кешування та допоміжні операції |
+
+Для основного застосунку та Telemetry використовуються окремі Deployment з двома репліками кожен.
+
+PostgreSQL використовує PersistentVolumeClaim для збереження даних між перезапусками Pod.
+
+### Структура Kubernetes-маніфестів
+
+У директорії `k8s/` розміщені окремі YAML-файли:
+
+- `00-namespace.yaml` — Namespace проєкту;
+- `01-configmap.yaml` — несекретні параметри конфігурації;
+- `02-secret.yaml` — секретні параметри;
+- `03-04-pvc-*.yaml` — сховища PostgreSQL;
+- `05-08-*-postgres.yaml` — Deployment і Service баз даних;
+- `09-10-*-redis.yaml` — Deployment і Service Redis;
+- `11-12-*-telemetry.yaml` — Deployment і Service Telemetry;
+- `13-14-*-fleet-management.yaml` — Deployment і Service основного застосунку.
+
+Усі ресурси розміщуються в Namespace `fleet-management`.
+
+### Вимоги
+
+Для розгортання необхідні:
+
+- Docker Desktop;
+- Minikube;
+- kubectl;
+- доступ до опублікованих контейнерних образів GHCR.
+
+### Запуск Minikube
+
+Запуск кластера з Docker driver:
+
+```powershell
+minikube start --driver=docker
+```
+
+Увімкнення metrics-server та ingress:
+
+```powershell
+minikube addons enable metrics-server
+minikube addons enable ingress
+```
+
+Перевірка стану кластера:
+
+```powershell
+kubectl get nodes
+kubectl get pods -n kube-system
+```
+
+### Розгортання застосунку
+
+Перебуваючи в кореневій директорії проєкту, виконати:
+
+```powershell
+kubectl apply -f k8s/
+```
+
+Перевірити створені ресурси:
+
+```powershell
+kubectl get all,pvc -n fleet-management
+```
+
+Перевірити стан Deployment:
+
+```powershell
+kubectl get deployments -n fleet-management
+```
+
+Перевірити стан PersistentVolumeClaim:
+
+```powershell
+kubectl get pvc -n fleet-management
+```
+
+### ConfigMap
+
+ConfigMap `fleet-config` містить несекретні параметри конфігурації:
+
+| Параметр | Значення |
+|---|---|
+| ENVIRONMENT | production |
+| DEBUG | false |
+| TELEMETRY_SERVICE_URL | http://telemetry-service:8001 |
+| REDIS_URL | redis://redis:6379/0 |
+| FLEET_MANAGEMENT_URL | http://fleet-management:8000 |
+
+Переглянути ConfigMap:
+
+```powershell
+kubectl get configmap fleet-config -n fleet-management -o yaml
+```
+
+### Secret
+
+Secret `fleet-secrets` використовується для зберігання чутливих параметрів:
+
+- `FLEET_DB_PASSWORD`;
+- `TELEMETRY_DB_PASSWORD`;
+- `SECRET_KEY`;
+- `SERVICE_API_KEY`;
+- `TELEMETRY_DATABASE_URL`;
+- `FLEET_DATABASE_URL`.
+
+У лабораторному середовищі використовуються демонстраційні тестові значення. Реальні паролі та ключі не повинні зберігатися у відкритому вигляді в Git-репозиторії.
+
+Переглянути наявність Secret:
+
+```powershell
+kubectl get secret fleet-secrets -n fleet-management
+```
+
+### Доступ до застосунку
+
+Для основного застосунку створено Service типу NodePort:
+
+- Service: `fleet-management`;
+- внутрішній порт: `8000`;
+- NodePort: `30080`.
+
+Для отримання адреси доступу:
+
+```powershell
+minikube service fleet-management -n fleet-management --url
+```
+
+Після виконання команди Minikube надає URL для доступу до застосунку через браузер. У Windows із Docker driver необхідно залишити термінал із запущеною командою відкритим.
+
+### Перевірка ConfigMap та Secret у Pod
+
+Переглянути змінні середовища ConfigMap у Pod:
+
+```powershell
+kubectl exec -it <pod-name> -n fleet-management -- printenv ENVIRONMENT
+kubectl exec -it <pod-name> -n fleet-management -- printenv DEBUG
+kubectl exec -it <pod-name> -n fleet-management -- printenv TELEMETRY_SERVICE_URL
+```
+
+Перевірити наявність секретних змінних без виведення їхніх значень:
+
+```powershell
+kubectl exec <pod-name> -n fleet-management -- sh -c 'test -n "$SECRET_KEY" && echo SECRET_KEY=present'
+```
+
+### Масштабування та самовідновлення
+
+Deployment основного застосунку налаштований на дві репліки.
+
+Перевірка Pod:
+
+```powershell
+kubectl get pods -n fleet-management
+```
+
+Перевірка самовідновлення: після видалення одного Pod Kubernetes автоматично створює новий.
+
+```powershell
+kubectl delete pod <pod-name> -n fleet-management
+```
+
+Масштабування до трьох реплік:
+
+```powershell
+kubectl scale deployment/fleet-management --replicas=3 -n fleet-management
+```
+
+Повернення до двох реплік:
+
+```powershell
+kubectl scale deployment/fleet-management --replicas=2 -n fleet-management
+```
+
+Перегляд логів обох реплік:
+
+```powershell
+kubectl logs -l app=fleet-management --prefix=true --tail=20 -n fleet-management
+```
+
+### Rolling Update та Rollback
+
+Для Deployment основного застосунку використовується стратегія `RollingUpdate` з параметрами:
+
+- `maxUnavailable: 0`;
+- `maxSurge: 1`.
+
+Це дозволяє створювати нові Pod до видалення старих, зберігаючи доступність застосунку під час оновлення за умови готовності нових реплік.
+
+У GHCR опубліковані версії образів:
+
+- `ghcr.io/arsen2024/fleet-management:1.0.0`;
+- `ghcr.io/arsen2024/fleet-management:1.1.0`;
+- `ghcr.io/arsen2024/fleet-telemetry:1.0.0`;
+- `ghcr.io/arsen2024/fleet-telemetry:1.1.0`.
+
+Для оновлення необхідно змінити тег образу в Deployment YAML та застосувати маніфест:
+
+```powershell
+kubectl apply -f k8s/13-deployment-fleet-management.yaml
+```
+
+Перевірка процесу оновлення:
+
+```powershell
+kubectl rollout status deployment/fleet-management -n fleet-management
+```
+
+Перегляд історії:
+
+```powershell
+kubectl rollout history deployment/fleet-management -n fleet-management
+```
+
+Повернення до попередньої версії:
+
+```powershell
+kubectl rollout undo deployment/fleet-management -n fleet-management
+```
+
+У межах лабораторної роботи було перевірено оновлення з версії `1.0.0` до `1.1.0` та успішне повернення до `1.0.0`.
+
+### Діагностика несправностей
+
+Для перевірки обробки помилок завантаження образів було використано неіснуючий тег:
+
+```text
+ghcr.io/arsen2024/fleet-telemetry:9.9.9
+```
+
+У результаті Pod перейшов у стан `ImagePullBackOff`.
+
+Для діагностики використовуються команди:
+
+```powershell
+kubectl get pods -n fleet-management
+kubectl describe pod <pod-name> -n fleet-management
+kubectl get events -n fleet-management --sort-by=.metadata.creationTimestamp
+```
+
+Після цього було відновлено правильний тег `1.0.0` та перевірено успішний запуск Telemetry Pod.
+
+Перегляд логів застосунку:
+
+```powershell
+kubectl logs deployment/fleet-management -n fleet-management --tail=30
+```
+
+### Моніторинг ресурсів
+
+Для отримання інформації про використання ресурсів використовується metrics-server:
+
+```powershell
+kubectl top nodes
+kubectl top pods -n fleet-management
+```
+
+### Особливість виконання вимоги mascot
+
+У додатку A лабораторної роботи вимагається мітка `mascot: кабачок`.
+
+Однак Kubernetes не дозволяє використовувати кириличні символи у значеннях labels. Тому використовується сумісне значення:
+
+```yaml
+mascot: kabachok
+```
+
+Оригінальний текст `кабачок` збережено в annotation:
+
+```yaml
+devops-lab/mascot: "кабачок"
+```
+
+Також для всіх створених Kubernetes-об'єктів використовується обов'язкова annotation:
+
+```yaml
+devops-lab/mascot-approved: "true"
+```
+
+Це дозволяє зберегти зміст вимоги та дотриматися обмежень Kubernetes API.
+
+## Подяки
+
+Автор висловлює щиру подяку кабачку за моральну підтримку.
