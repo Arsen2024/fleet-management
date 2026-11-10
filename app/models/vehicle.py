@@ -20,8 +20,7 @@ class Vehicle(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
-        nullable=False,
+        ForeignKey("users.id"), nullable=False, index=True
     )
 
     brand: Mapped[str] = mapped_column(

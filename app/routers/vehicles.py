@@ -1,6 +1,9 @@
+import json
+import logging
 import secrets
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +18,23 @@ router = APIRouter(
     tags=["Vehicles"],
 )
 
+logger = logging.getLogger(__name__)
+
+VEHICLES_CACHE_TTL = 300
+
+
+async def invalidate_vehicles_cache(request: Request, user_id: int):
+    cache_key = f"vehicles:user:{user_id}"
+
+    try:
+        await request.app.state.redis.delete(cache_key)
+    except RedisError:
+        logger.warning(
+            "Could not invalidate vehicles cache for user %s",
+            user_id,
+            exc_info=True,
+        )
+
 
 @router.post(
     "",
@@ -23,6 +43,7 @@ router = APIRouter(
 )
 async def create_vehicle(
     vehicle_data: VehicleCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -38,17 +59,65 @@ async def create_vehicle(
     await db.commit()
     await db.refresh(vehicle)
 
+    await invalidate_vehicles_cache(request, current_user.id)
+
     return vehicle
 
 
 @router.get("", response_model=list[VehicleResponse])
 async def get_my_vehicles(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.scalars(select(Vehicle).where(Vehicle.user_id == current_user.id))
+    cache_key = f"vehicles:user:{current_user.id}"
+    redis = request.app.state.redis
 
-    return result.all()
+    try:
+        cached_vehicles = await redis.get(cache_key)
+
+        if cached_vehicles is not None:
+            try:
+                vehicles_data = json.loads(cached_vehicles)
+
+                if isinstance(vehicles_data, list):
+                    return vehicles_data
+
+            except json.JSONDecodeError:
+                logger.warning(
+                    "Invalid vehicles cache for user %s",
+                    current_user.id,
+                )
+
+    except RedisError:
+        logger.warning(
+            "Could not read vehicles cache for user %s",
+            current_user.id,
+            exc_info=True,
+        )
+
+    result = await db.scalars(select(Vehicle).where(Vehicle.user_id == current_user.id))
+    vehicles = result.all()
+
+    vehicles_data = [
+        VehicleResponse.model_validate(vehicle).model_dump(mode="json")
+        for vehicle in vehicles
+    ]
+
+    try:
+        await redis.set(
+            cache_key,
+            json.dumps(vehicles_data),
+            ex=VEHICLES_CACHE_TTL,
+        )
+    except RedisError:
+        logger.warning(
+            "Could not write vehicles cache for user %s",
+            current_user.id,
+            exc_info=True,
+        )
+
+    return vehicles
 
 
 @router.patch(
@@ -58,6 +127,7 @@ async def get_my_vehicles(
 async def update_vehicle_status(
     vehicle_id: int,
     status_data: VehicleStatusUpdate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -80,6 +150,8 @@ async def update_vehicle_status(
     await db.commit()
     await db.refresh(vehicle)
 
+    await invalidate_vehicles_cache(request, current_user.id)
+
     return vehicle
 
 
@@ -89,6 +161,7 @@ async def update_vehicle_status(
 )
 async def delete_vehicle(
     vehicle_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -108,6 +181,8 @@ async def delete_vehicle(
 
     await db.delete(vehicle)
     await db.commit()
+
+    await invalidate_vehicles_cache(request, current_user.id)
 
 
 @router.get("/internal/{vehicle_id}")

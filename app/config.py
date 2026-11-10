@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     secret_key: str
     service_api_key: str
     telemetry_service_url: str = "http://127.0.0.1:8001"
+    redis_url: str = "redis://localhost:6379/0"
     debug: bool = False
 
     model_config = SettingsConfigDict(
