@@ -12,3 +12,4 @@ jinja2
 pydantic-settings
 httpx
 redis
+prometheus-fastapi-instrumentator

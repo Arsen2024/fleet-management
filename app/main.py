@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from redis.asyncio import Redis
 
 from app.config import settings
@@ -38,6 +39,9 @@ app.include_router(users.router)
 app.include_router(home.router)
 app.include_router(vehicles.router)
 app.include_router(web.router)
+
+
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/instance")

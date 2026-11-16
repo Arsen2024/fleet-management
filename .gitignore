@@ -26,6 +26,7 @@ Thumbs.db
 .coverage
 htmlcov/
 cpu_ram_log.csv
+docker_cpu_ram_log.csv
 
 # Ruff
 .ruff_cache/

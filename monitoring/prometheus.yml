@@ -1,0 +1,23 @@
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "fleet-management"
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "fleet1:8000"
+          - "fleet2:8000"
+          - "fleet3:8000"
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets:
+          - "prometheus:9090"
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets:
+          - "cadvisor:8080"

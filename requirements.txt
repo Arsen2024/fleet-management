@@ -16,3 +16,4 @@ ruff
 locust
 psutil
 redis
+prometheus-fastapi-instrumentator
