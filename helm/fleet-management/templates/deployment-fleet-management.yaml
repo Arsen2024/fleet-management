@@ -1,0 +1,78 @@
+# DVO-L4-3C8B52
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fleet-management.fullname" . }}
+  labels:
+    {{- include "fleet-management.labels" . | nindent 4 }}
+  annotations:
+    {{- include "fleet-management.annotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount.fleet }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ include "fleet-management.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "fleet-management.fullname" . }}
+        {{- include "fleet-management.labels" . | nindent 8 }}
+      annotations:
+        {{- include "fleet-management.annotations" . | nindent 8 }}
+    spec:
+      containers:
+        - name: fleet-management
+          image: "{{ .Values.images.fleet.repository }}:{{ .Values.images.fleet.tag }}"
+          imagePullPolicy: {{ .Values.images.fleet.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-config
+                  key: ENVIRONMENT
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-config
+                  key: DEBUG
+            - name: TELEMETRY_SERVICE_URL
+              value: "http://{{ include "fleet-management.fullname" . }}-telemetry:8001"
+            - name: REDIS_URL
+              value: "redis://{{ include "fleet-management.fullname" . }}-redis:6379/0"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-secrets
+                  key: FLEET_DATABASE_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-secrets
+                  key: SECRET_KEY
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-secrets
+                  key: SERVICE_API_KEY
+          resources:
+            {{- toYaml .Values.resources.fleet | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 40
+            periodSeconds: 10

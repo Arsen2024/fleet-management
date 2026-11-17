@@ -35,3 +35,7 @@ docker_cpu_ram_log.csv
 build/
 dist/
 *.egg-info/
+
+# DVO-L4-3C8B52
+helm/fleet-management/values-secret.local.yaml
+fleet-management-0.1.0.tgz

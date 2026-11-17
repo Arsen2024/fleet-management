@@ -1,0 +1,22 @@
+# DVO-L4-3C8B52
+
+Fleet Management has been deployed!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+To check the deployed resources:
+  kubectl get all -n {{ .Release.Namespace }}
+
+To access the application through the Kubernetes Service:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "fleet-management.fullname" . }} 8000:{{ .Values.service.fleet.port }}
+
+Then open:
+  http://localhost:8000
+
+{{- if .Values.ingress.enabled }}
+
+Ingress is enabled:
+  http://fleet.local
+
+{{- end }}

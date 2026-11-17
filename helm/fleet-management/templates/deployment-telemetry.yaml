@@ -1,0 +1,66 @@
+# DVO-L4-3C8B52
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fleet-management.fullname" . }}-telemetry
+  labels:
+    {{- include "fleet-management.labels" . | nindent 4 }}
+  annotations:
+    {{- include "fleet-management.annotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount.telemetry }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ include "fleet-management.fullname" . }}-telemetry
+  template:
+    metadata:
+      labels:
+        app: {{ include "fleet-management.fullname" . }}-telemetry
+        {{- include "fleet-management.labels" . | nindent 8 }}
+      annotations:
+        {{- include "fleet-management.annotations" . | nindent 8 }}
+    spec:
+      containers:
+        - name: telemetry
+          image: "{{ .Values.images.telemetry.repository }}:{{ .Values.images.telemetry.tag }}"
+          imagePullPolicy: {{ .Values.images.telemetry.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8001
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-secrets
+                  key: TELEMETRY_DATABASE_URL
+            - name: FLEET_MANAGEMENT_URL
+              value: "http://{{ include "fleet-management.fullname" . }}:8000"
+            - name: SERVICE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-secrets
+                  key: SERVICE_API_KEY
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-config
+                  key: DEBUG
+          resources:
+            {{- toYaml .Values.resources.telemetry | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 10

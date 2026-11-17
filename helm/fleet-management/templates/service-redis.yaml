@@ -1,0 +1,20 @@
+# DVO-L4-3C8B52
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fleet-management.fullname" . }}-redis
+  labels:
+    {{- include "fleet-management.labels" . | nindent 4 }}
+  annotations:
+    {{- include "fleet-management.annotations" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.redis.type }}
+  selector:
+    app: {{ include "fleet-management.fullname" . }}-redis
+  ports:
+    - name: redis
+      port: {{ .Values.service.redis.port }}
+      targetPort: 6379
+      protocol: TCP
+{{- end }}

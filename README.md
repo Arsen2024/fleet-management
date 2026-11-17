@@ -669,6 +669,362 @@ devops-lab/mascot-approved: "true"
 
 Це дозволяє зберегти зміст вимоги та дотриматися обмежень Kubernetes API.
 
+## Helm (Kubernetes Package Management)
+
+Для керування розгортанням Fleet Management та Telemetry використовується Helm — пакетний менеджер Kubernetes.
+
+Helm Chart розташований у директорії `helm/fleet-management/` та містить шаблони Kubernetes-ресурсів, параметри конфігурації й допоміжні шаблони.
+
+Для виконання лабораторної роботи використовувалася версія Helm `v4.3.2`.
+
+### Структура Helm Chart
+
+```text
+helm/
+└── fleet-management/
+    ├── Chart.yaml
+    ├── .helmignore
+    ├── values.yaml
+    ├── values-dev.yaml
+    ├── values-prod.yaml
+    ├── namespace-dev.yaml
+    └── templates/
+        ├── _helpers.tpl
+        ├── configmap.yaml
+        ├── secret.yaml
+        ├── deployment-fleet-management.yaml
+        ├── deployment-fleet-postgres.yaml
+        ├── deployment-telemetry.yaml
+        ├── deployment-telemetry-postgres.yaml
+        ├── deployment-redis.yaml
+        ├── service-fleet-management.yaml
+        ├── service-fleet-postgres.yaml
+        ├── service-telemetry.yaml
+        ├── service-telemetry-postgres.yaml
+        ├── service-redis.yaml
+        ├── pvc-fleet-postgres.yaml
+        ├── pvc-telemetry-postgres.yaml
+        ├── ingress.yaml
+        └── NOTES.txt
+```
+
+Призначення основних файлів:
+
+| Файл | Призначення |
+|---|---|
+| `Chart.yaml` | Метадані Helm Chart |
+| `values.yaml` | Базові параметри конфігурації |
+| `values-dev.yaml` | Налаштування середовища Development |
+| `values-prod.yaml` | Налаштування середовища Production |
+| `_helpers.tpl` | Спільні шаблони, labels та annotations |
+| `configmap.yaml` | Генерація ConfigMap |
+| `secret.yaml` | Генерація Kubernetes Secret |
+| `deployment-*.yaml` | Шаблони Deployment |
+| `service-*.yaml` | Шаблони Service |
+| `pvc-*.yaml` | Шаблони PersistentVolumeClaim |
+| `ingress.yaml` | Шаблон Ingress |
+| `NOTES.txt` | Інформація після встановлення Chart |
+
+### Конфігурації середовищ
+
+Для різних середовищ використовуються окремі файли параметрів.
+
+**Development (`values-dev.yaml`):**
+
+- Fleet Management — 1 репліка;
+- Telemetry — 1 репліка;
+- середовище `sandbox`;
+- Debug увімкнено;
+- зменшені CPU та Memory requests/limits;
+- сервіс Fleet Management використовує NodePort `30081`;
+- Ingress вимкнений.
+
+**Production (`values-prod.yaml`):**
+
+- Fleet Management — 3 репліки;
+- Telemetry — 3 репліки;
+- середовище `production`;
+- Debug вимкнено;
+- збільшені CPU та Memory requests/limits;
+- сервіс Fleet Management використовує ClusterIP;
+- Ingress увімкнений.
+
+Перевірка Chart для обох середовищ:
+
+```powershell
+helm lint .\helm\fleet-management -f .\helm\fleet-management\values-dev.yaml
+helm lint .\helm\fleet-management -f .\helm\fleet-management\values-prod.yaml
+```
+
+Для локального тестування із секретними значеннями використовується окремий файл `values-secret.local.yaml`, який виключений із Git за допомогою `.gitignore`.
+
+### Підготовка середовища
+
+Перевірка версії Helm:
+
+```powershell
+helm version
+```
+
+Створення окремого Namespace для Helm-розгортання:
+
+```powershell
+kubectl apply -f .\helm\fleet-management\namespace-dev.yaml
+```
+
+Перевірка Namespace:
+
+```powershell
+kubectl get namespaces
+```
+
+Для лабораторної роботи використовується окремий Namespace `fleet-helm-dev`, що дозволяє не змінювати ресурси попередньої лабораторної роботи в Namespace `fleet-management`.
+
+### Перевірка та рендеринг Chart
+
+Перевірка синтаксису та коректності Helm Chart:
+
+```powershell
+helm lint .\helm\fleet-management
+```
+
+Перегляд Kubernetes-маніфестів, які будуть створені для Development:
+
+```powershell
+helm template fleet-dev .\helm\fleet-management `
+  -n fleet-helm-dev `
+  -f .\helm\fleet-management\values-dev.yaml `
+  -f .\helm\fleet-management\values-secret.local.yaml
+```
+
+Аналогічно можна переглянути Production-конфігурацію, замінивши `values-dev.yaml` на `values-prod.yaml`.
+
+### Встановлення Helm Release
+
+Встановлення Chart для Development:
+
+```powershell
+helm install fleet-dev .\helm\fleet-management `
+  -n fleet-helm-dev `
+  -f .\helm\fleet-management\values-dev.yaml `
+  -f .\helm\fleet-management\values-secret.local.yaml
+```
+
+Перевірка встановленого Release:
+
+```powershell
+helm list -n fleet-helm-dev
+```
+
+Перевірка Kubernetes-ресурсів:
+
+```powershell
+kubectl get pods -n fleet-helm-dev
+kubectl get services -n fleet-helm-dev
+kubectl get pvc -n fleet-helm-dev
+```
+
+Для доступу до основного застосунку використовується port-forward:
+
+```powershell
+kubectl port-forward -n fleet-helm-dev svc/fleet-dev-fleet-management 8000:8000
+```
+
+Після запуску застосунок доступний за адресою:
+
+```text
+http://localhost:8000
+```
+
+### Оновлення Helm Release
+
+Для оновлення встановленого Release використовується команда `helm upgrade`:
+
+```powershell
+helm upgrade fleet-dev .\helm\fleet-management `
+  -n fleet-helm-dev `
+  -f .\helm\fleet-management\values-dev.yaml `
+  -f .\helm\fleet-management\values-secret.local.yaml
+```
+
+Перевірка стану ресурсів після оновлення:
+
+```powershell
+kubectl get pods -n fleet-helm-dev
+helm list -n fleet-helm-dev
+```
+
+### Історія Release та Rollback
+
+Helm зберігає історію змін Release.
+
+Перегляд історії:
+
+```powershell
+helm history fleet-dev -n fleet-helm-dev
+```
+
+Отримання інформації про конкретну ревізію:
+
+```powershell
+helm status fleet-dev -n fleet-helm-dev
+```
+
+Повернення до попередньої ревізії:
+
+```powershell
+helm rollback fleet-dev 2 -n fleet-helm-dev
+```
+
+Перевірка результату:
+
+```powershell
+helm history fleet-dev -n fleet-helm-dev
+helm status fleet-dev -n fleet-helm-dev
+```
+
+У межах лабораторної роботи було перевірено встановлення Release, його оновлення, перегляд історії та успішне повернення до попередньої ревізії.
+
+### Видалення Helm Release
+
+Для видалення встановленого Release використовується:
+
+```powershell
+helm uninstall fleet-dev -n fleet-helm-dev
+```
+
+Перевірка:
+
+```powershell
+helm list -n fleet-helm-dev
+```
+
+Видалення Release не видаляє вихідну директорію Helm Chart або опублікований пакет у OCI Registry.
+
+**Примітка:** під час видалення Release можуть бути видалені PVC, створені Chart. Тому перед видаленням необхідно враховувати політику збереження даних PersistentVolume.
+
+### Пакування Helm Chart
+
+Для створення архіву Helm Chart використовується команда:
+
+```powershell
+helm package .\helm\fleet-management
+```
+
+У результаті створюється архів:
+
+```text
+fleet-management-0.1.0.tgz
+```
+
+Цей архів можна використовувати для поширення та встановлення Chart.
+
+### Публікація Helm Chart в OCI Registry
+
+Для зберігання Helm Chart використовується GitHub Container Registry (GHCR).
+
+Авторизація в Registry:
+
+```powershell
+helm registry login ghcr.io -u <github-username> --password-stdin
+```
+
+Публікація Chart:
+
+```powershell
+helm push .\fleet-management-0.1.0.tgz oci://ghcr.io/arsen2024/charts
+```
+
+Опублікований пакет:
+
+```text
+oci://ghcr.io/arsen2024/charts/fleet-management
+```
+
+Версія Chart: `0.1.0`.
+
+Перевірка опублікованого пакета:
+
+```powershell
+helm show chart oci://ghcr.io/arsen2024/charts/fleet-management --version 0.1.0
+```
+
+### Встановлення Chart безпосередньо з OCI Registry
+
+Для демонстрації встановлення Chart із віддаленого Registry було створено окремий Namespace:
+
+```powershell
+kubectl create namespace fleet-helm-oci
+```
+
+Встановлення опублікованого Chart:
+
+```powershell
+helm install fleet-oci oci://ghcr.io/arsen2024/charts/fleet-management `
+  --version 0.1.0 `
+  -n fleet-helm-oci `
+  -f .\helm\fleet-management\values-dev.yaml `
+  -f .\helm\fleet-management\values-secret.local.yaml `
+  --set service.fleet.type=ClusterIP
+```
+
+Helm автоматично завантажує Chart із GHCR та встановлює його в Kubernetes.
+
+Перевірка встановленого Release:
+
+```powershell
+helm list -n fleet-helm-oci
+```
+
+Перевірка стану Pod:
+
+```powershell
+kubectl get pods -n fleet-helm-oci
+```
+
+У результаті Chart було успішно завантажено з OCI Registry та розгорнуто в окремому Namespace. Усі п'ять Pod перейшли в стан `Running`.
+
+### Особливість виконання вимоги mascot
+
+Для Helm Chart лабораторної роботи використовується вимога з додатка A щодо mascot `гарбуз`.
+
+Оскільки Kubernetes не дозволяє використовувати кириличні символи у значеннях labels, використовується сумісне значення:
+
+```yaml
+mascot: garbuz
+```
+
+Оригінальний текст збережено в annotation:
+
+```yaml
+devops-lab/mascot: "гарбуз"
+```
+
+Для всіх створених Kubernetes-об'єктів також використовується обов'язкова annotation:
+
+```yaml
+devops-lab/mascot-approved: "true"
+```
+
+Спільні labels та annotations визначені в `_helpers.tpl` і застосовуються до ресурсів через Helm-шаблони.
+
+### Результати лабораторної роботи
+
+У межах лабораторної роботи №4 було виконано:
+
+- створення Helm Chart на основі Kubernetes-маніфестів попередньої лабораторної роботи;
+- параметризацію конфігурацій Development та Production;
+- перевірку Chart за допомогою `helm lint`;
+- встановлення та оновлення Helm Release;
+- перегляд історії Release та виконання Rollback;
+- видалення Helm Release;
+- пакування Chart в архів `.tgz`;
+- публікацію пакета в GitHub Container Registry;
+- встановлення Chart безпосередньо з OCI Registry;
+- перевірку працездатності розгорнутих Pod.
+
+У результаті створено Helm Chart `fleet-management` версії `0.1.0`, який можна повторно використовувати для розгортання застосунку в Kubernetes.
+
 ## Подяки
 
 Автор висловлює щиру подяку кабачку за моральну підтримку.

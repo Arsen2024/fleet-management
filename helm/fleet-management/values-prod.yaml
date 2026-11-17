@@ -1,0 +1,46 @@
+# DVO-L4-3C8B52
+
+replicaCount:
+  fleet: 3
+  telemetry: 3
+
+config:
+  environment: production
+  debug: "false"
+
+resources:
+  fleet:
+    requests:
+      cpu: 300m
+      memory: 384Mi
+    limits:
+      cpu: 1500m
+      memory: 1Gi
+  telemetry:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+  postgres:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  redis:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+ingress:
+  enabled: true
+
+service:
+  fleet:
+    type: ClusterIP

@@ -1,0 +1,12 @@
+# DVO-L4-3C8B52
+
+.DS_Store
+.git/
+.gitignore
+*.swp
+*.bak
+*.tmp
+*.orig
+*.rej
+*.log
+*.local.yaml

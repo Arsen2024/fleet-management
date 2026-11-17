@@ -1,0 +1,47 @@
+# DVO-L4-3C8B52
+{{- if .Values.redis.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fleet-management.fullname" . }}-redis
+  labels:
+    {{- include "fleet-management.labels" . | nindent 4 }}
+  annotations:
+    {{- include "fleet-management.annotations" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "fleet-management.fullname" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ include "fleet-management.fullname" . }}-redis
+        {{- include "fleet-management.labels" . | nindent 8 }}
+      annotations:
+        {{- include "fleet-management.annotations" . | nindent 8 }}
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.images.redis.repository }}:{{ .Values.images.redis.tag }}"
+          imagePullPolicy: {{ .Values.images.redis.pullPolicy }}
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            {{- toYaml .Values.resources.redis | nindent 12 }}
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 10
+{{- end }}

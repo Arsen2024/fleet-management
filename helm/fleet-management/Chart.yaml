@@ -1,0 +1,8 @@
+# DVO-L4-3C8B52
+
+apiVersion: v2
+name: fleet-management
+description: Helm chart for Fleet Management and Telemetry services
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

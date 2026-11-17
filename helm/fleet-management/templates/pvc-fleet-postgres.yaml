@@ -1,0 +1,18 @@
+# DVO-L4-3C8B52
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fleet-management.fullname" . }}-fleet-postgres
+  labels:
+    {{- include "fleet-management.labels" . | nindent 4 }}
+  annotations:
+    {{- include "fleet-management.annotations" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgres.fleet.storage }}
+  storageClassName: standard
+{{- end }}

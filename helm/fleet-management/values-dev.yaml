@@ -1,0 +1,46 @@
+# DVO-L4-3C8B52
+
+replicaCount:
+  fleet: 1
+  telemetry: 1
+
+config:
+  environment: sandbox
+  debug: "true"
+
+resources:
+  fleet:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  telemetry:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  postgres:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  redis:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+ingress:
+  enabled: false
+
+service:
+  fleet:
+    nodePort: 30081

@@ -1,0 +1,64 @@
+# DVO-L4-3C8B52
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fleet-management.fullname" . }}-fleet-postgres
+  labels:
+    {{- include "fleet-management.labels" . | nindent 4 }}
+  annotations:
+    {{- include "fleet-management.annotations" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "fleet-management.fullname" . }}-fleet-postgres
+  template:
+    metadata:
+      labels:
+        app: {{ include "fleet-management.fullname" . }}-fleet-postgres
+        {{- include "fleet-management.labels" . | nindent 8 }}
+      annotations:
+        {{- include "fleet-management.annotations" . | nindent 8 }}
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.images.postgres.repository }}:{{ .Values.images.postgres.tag }}"
+          imagePullPolicy: {{ .Values.images.postgres.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.fleet.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.fleet.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "fleet-management.fullname" . }}-secrets
+                  key: FLEET_DB_PASSWORD
+          resources:
+            {{- toYaml .Values.resources.postgres | nindent 12 }}
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U {{ .Values.postgres.fleet.username }} -d {{ .Values.postgres.fleet.database }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U {{ .Values.postgres.fleet.username }} -d {{ .Values.postgres.fleet.database }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: {{ include "fleet-management.fullname" . }}-fleet-postgres

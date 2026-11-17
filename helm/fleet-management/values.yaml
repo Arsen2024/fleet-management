@@ -1,0 +1,105 @@
+# DVO-L4-3C8B52
+
+fullnameOverride: ""
+
+images:
+  fleet:
+    repository: ghcr.io/arsen2024/fleet-management
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  telemetry:
+    repository: ghcr.io/arsen2024/fleet-telemetry
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  postgres:
+    repository: postgres
+    tag: "17"
+    pullPolicy: IfNotPresent
+  redis:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+replicaCount:
+  fleet: 2
+  telemetry: 2
+
+service:
+  fleet:
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+    nodePort: 30080
+  telemetry:
+    type: ClusterIP
+    port: 8001
+    targetPort: 8001
+  redis:
+    type: ClusterIP
+    port: 6379
+    targetPort: 6379
+  fleetPostgres:
+    type: ClusterIP
+    port: 5432
+  telemetryPostgres:
+    type: ClusterIP
+    port: 5432
+
+postgres:
+  fleet:
+    database: fleet_db_sandbox
+    username: fleet_user
+    storage: 1Gi
+  telemetry:
+    database: telemetry_db
+    username: telemetry_user
+    storage: 1Gi
+
+redis:
+  enabled: true
+
+persistence:
+  enabled: true
+
+ingress:
+  enabled: false
+
+config:
+  environment: production
+  debug: "false"
+
+resources:
+  fleet:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+  telemetry:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  postgres:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  redis:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+secrets:
+  fleetDbPassword: "CHANGE_ME"
+  telemetryDbPassword: "CHANGE_ME"
+  secretKey: "CHANGE_ME"
+  serviceApiKey: "CHANGE_ME"
